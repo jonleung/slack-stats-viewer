@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Slack Stats : Loading...</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+    <script type="text/javascript">
+      var yesterdayTotal = prompt('How many messages were sent yesterday?');
+      var desiredToday = prompt('How many messages do you want to reach today?');
+      var nowTotal;
+
+      var loadStats = function() {
+        $.get('https://jsonp.afeld.me/?url=https://slack-stats-collector.hackclub.io/stats', function(data) {
+          nowTotal = Object.keys(data.members)
+                                .reduce(function(sum, key) {
+                                  // debugger
+                                  return sum + data.members[key].allTime
+                                }, 0)
+          var todayTotal = nowTotal - yesterdayTotal;
+          var ratio = todayTotal + " / " + desiredToday;
+          var outputString = ratio;
+          document.getElementById("ratio").innerHTML = outputString;
+          document.title = outputString;
+          document.getElementById("time").innerHTML = "Updated at " + new Date().toLocaleTimeString().replace("/.*(\d{2}:\d{2}:\d{2}).*/", "$1");
+        });
+      }
+
+      loadStats();
+      setInterval(loadStats, 1000*60*30);
+    </script>
+
+  </head>
+  <body>
+    <h1 id="ratio">Loading...</h1>
+    <p><i id="time"><i></p>
+    <!-- Total from yesterday 43820 -->
+
+  </body>
+</html>
