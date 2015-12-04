@@ -6,29 +6,50 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 
+    <script src="https://cdn.jsbundler.com/packages/tsv/0.2.0/tsv.js"></script>
+
     <script type="text/javascript">
-      var yesterdayTotal = prompt('How many messages were sent yesterday?');
-      var desiredToday = prompt('How many messages do you want to reach today?');
-      var nowTotal;
+      'use strict';
 
-      var loadStats = function() {
-        $.get('https://jsonp.afeld.me/?url=https://slack-stats-collector.hackclub.io/stats', function(data) {
-          nowTotal = Object.keys(data.members)
-                                .reduce(function(sum, key) {
-                                  // debugger
-                                  return sum + data.members[key].allTime
-                                }, 0)
-          var todayTotal = nowTotal - yesterdayTotal;
-          var ratio = todayTotal + " / " + desiredToday;
-          var outputString = ratio;
-          document.getElementById("ratio").innerHTML = outputString;
-          document.title = outputString;
-          document.getElementById("time").innerHTML = "Updated at " + new Date().toLocaleTimeString().replace("/.*(\d{2}:\d{2}:\d{2}).*/", "$1");
-        });
-      }
+      fetch('https://rawgit.com/hackclub/metrics/master/slack_stats.tsv')
+        .then((res) => res.text())
+        .then((body) => tsv.TSV.parse(body))
+        .then((parsedTSV) => {
+          var keys = Object.keys(parsedTSV[0]);
+          var lastTimeStamp = keys[keys.length - 1];
 
-      loadStats();
-      setInterval(loadStats, 1000*60*30);
+          let totalMessagesYesterday = 0;
+          var stuff = parsedTSV.map((user, index) => {
+            if(index !== parsedTSV.length - 1) {
+              totalMessagesYesterday += Number(user[lastTimeStamp]);
+            }
+          });
+          return totalMessagesYesterday;
+        })
+        .then((yesterdayTotal) => {
+          var desiredToday = prompt('How many messages do you want to reach today?');
+          var nowTotal;
+
+          var loadStats = function() {
+            $.get('https://jsonp.afeld.me/?url=https://slack-stats-collector.hackclub.io/stats', function(data) {
+              nowTotal = Object.keys(data.members)
+                                    .reduce(function(sum, key) {
+                                      // debugger
+                                      return sum + data.members[key].allTime
+                                    }, 0)
+              var todayTotal = nowTotal - yesterdayTotal;
+              var ratio = todayTotal + " / " + desiredToday;
+              var outputString = ratio;
+              document.getElementById("ratio").innerHTML = outputString;
+              document.title = outputString;
+              document.getElementById("time").innerHTML = "Updated at " + new Date().toLocaleTimeString().replace("/.*(\d{2}:\d{2}:\d{2}).*/", "$1");
+            });
+          }
+
+          loadStats();
+          setInterval(loadStats, 1000*60*30);
+        })
+
     </script>
 
   </head>
